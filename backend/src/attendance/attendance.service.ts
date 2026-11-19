@@ -42,9 +42,14 @@ export class AttendanceService {
     }
   
     const [rows] = await pool.execute(
-      `SELECT id, employee_id, attendance_date, attendance_time, photo_path
-       FROM attendances
-       WHERE id = ?`,
+      `SELECT
+        id,
+        employee_id,
+        DATE_FORMAT(attendance_date, '%Y-%m-%d') AS attendance_date,
+        attendance_time,
+        photo_path
+      FROM attendances
+      WHERE id = ?`,
       [result.insertId],
     );
   
@@ -65,7 +70,7 @@ export class AttendanceService {
         a.employee_id,
         e.employee_number,
         e.name AS employee_name,
-        a.attendance_date,
+        DATE_FORMAT(a.attendance_date, '%Y-%m-%d') AS attendance_date,
         a.attendance_time,
         a.photo_path
       FROM attendances a
@@ -115,5 +120,29 @@ export class AttendanceService {
     return new StreamableFile(createReadStream(filePath), {
       type: contentType,
     });
+  }
+
+  async findMyAttendance(employeeId: number) {
+    const [rows] = await this.databaseService
+      .getPool()
+      .query(
+        `SELECT
+          id,
+          DATE_FORMAT(attendance_date, '%Y-%m-%d') AS attendance_date,
+          attendance_time
+         FROM attendances
+         WHERE employee_id = ? AND attendance_date = CURDATE()`,
+        [employeeId],
+      );
+
+    const attendances = rows as {
+      id: number;
+      attendance_date: string;
+      attendance_time: string;
+    }[];
+
+    return {
+      attendance: attendances[0] ?? null,
+    };
   }
 }

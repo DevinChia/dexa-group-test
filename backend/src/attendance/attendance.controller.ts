@@ -96,4 +96,10 @@ export class AttendanceController {
       request.user.role,
     );
   }
+
+  @Get('my')
+  @Roles('employee')
+  findMyAttendance(@Req() request: AuthenticatedRequest) {
+    return this.attendanceService.findMyAttendance(request.user.sub);
+  }
 }
